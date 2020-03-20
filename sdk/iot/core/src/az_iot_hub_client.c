@@ -131,17 +131,34 @@ AZ_NODISCARD az_result az_iot_hub_client_properties_append(
   AZ_PRECONDITION_VALID_SPAN(value, 1, false);
 
   az_span prop_span = properties->_internal.properties;
+  az_span slice_span = properties->_internal.properties;
 
   if (az_span_length(prop_span) > 0)
   {
     AZ_RETURN_IF_FAILED(az_span_append_uint8(prop_span, hub_client_param_separator, &prop_span));
   }
 
-  AZ_RETURN_IF_FAILED(az_span_append(prop_span, name, &prop_span));
-  AZ_RETURN_IF_FAILED(az_span_append_uint8(prop_span, hub_client_param_equals, &prop_span));
-  AZ_RETURN_IF_FAILED(az_span_append(prop_span, value, &prop_span));
+  AZ_RETURN_IF_FAILED(az_span_copy_url_encode(
+      az_span_slice(prop_span, az_span_length(prop_span), az_span_capacity(prop_span)),
+      name,
+      &slice_span));
 
-  properties->_internal.properties = prop_span;
+  prop_span = az_span_init(
+      az_span_ptr(prop_span),
+      az_span_length(prop_span) + az_span_length(slice_span),
+      az_span_capacity(prop_span));
+
+  AZ_RETURN_IF_FAILED(az_span_append_uint8(prop_span, hub_client_param_equals, &prop_span));
+
+  AZ_RETURN_IF_FAILED(az_span_copy_url_encode(
+      az_span_slice(prop_span, az_span_length(prop_span), az_span_capacity(prop_span)),
+      value,
+      &slice_span));
+
+  properties->_internal.properties = az_span_init(
+      az_span_ptr(prop_span),
+      az_span_length(prop_span) + az_span_length(slice_span),
+      az_span_capacity(prop_span));
 
   return AZ_OK;
 }

@@ -385,6 +385,21 @@ static void test_az_iot_hub_client_properties_append_twice_small_buffer_fail(voi
       az_span_length(props._internal.properties), sizeof(test_correct_one_key_value) - 1);
 }
 
+static void test_az_iot_hub_client_properties_append_url_succeed(void** state)
+{
+  (void)state;
+
+  uint8_t test_buf[sizeof("test%20key%2F=test%20val%2F")];
+  az_span test_span = az_span_init(test_buf, 0, sizeof(test_buf));
+  az_iot_hub_client_properties props;
+
+  assert_int_equal(az_iot_hub_client_properties_init(&props, test_span), AZ_OK);
+  assert_int_equal(
+      az_iot_hub_client_properties_append(&props, AZ_SPAN_FROM_STR("test key/"), AZ_SPAN_FROM_STR("test val/")), AZ_OK);
+  assert_memory_equal(
+      "test%20key%2F=test%20val%2F", az_span_ptr(test_span), sizeof("test%20key%2F=test%20val%2F") - 1);
+}
+
 int test_iot_hub_client()
 {
   const struct CMUnitTest tests[] = {
@@ -409,6 +424,7 @@ int test_iot_hub_client()
     cmocka_unit_test(test_az_iot_hub_client_properties_append_small_buffer_fail),
     cmocka_unit_test(test_az_iot_hub_client_properties_append_twice_succeed),
     cmocka_unit_test(test_az_iot_hub_client_properties_append_twice_small_buffer_fail),
+    cmocka_unit_test(test_az_iot_hub_client_properties_append_url_succeed),
   };
   return cmocka_run_group_tests_name("az_iot_client", tests, NULL, NULL);
 }
